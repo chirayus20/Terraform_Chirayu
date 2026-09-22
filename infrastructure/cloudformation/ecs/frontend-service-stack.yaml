@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Frontend ECS Service running on AWS Fargate (Port 8000)
+
+Resources:
+  FrontendService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: express-frontend
+      Cluster: !ImportValue ecs-cluster-name
+      TaskDefinition: !ImportValue frontend-task-definition-arn
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !ImportValue flask-express-PublicSubnet1
+            - !ImportValue flask-express-PublicSubnet2
+          SecurityGroups:
+            - !ImportValue flask-express-FrontendSG
+      ServiceConnectConfiguration:
+        Enabled: true
+        Namespace: production.local
+
+Outputs:
+  FrontendServiceName:
+    Description: Frontend ECS Service Name
+    Value: !Ref FrontendService
