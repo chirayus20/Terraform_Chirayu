@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Backend Task Definition for Flask app running on port 9000
+
+Parameters:
+  DBSecretArn:
+    Type: String
+    Description: ARN of the AWS Secrets Manager secret containing DB_USER and DB_PASSWORD
+
+  ImageUri:
+    Type: String
+    Description: ECR Image URI for Flask Backend (flask-backend)
+
+  DBCluster:
+    Type: String
+    Description: MongoDB cluster URL (e.g. cluster0.xxxx.mongodb.net)
+
+  DBName:
+    Type: String
+    Description: MongoDB database name
+    Default: user_db
+
+Resources:
+  # This role allows ECS task to pull image, send logs, and read secrets
+  BackendExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: BackendSecretAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref DBSecretArn
+
+  # This log group stores backend container logs
+  BackendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/flask-backend-task
+      RetentionInDays: 7
+
+  BackendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: flask-backend-task
+      RequiresCompatibilities:
+        - FARGATE
+      NetworkMode: awsvpc
+      Cpu: "256"
+      Memory: "512"
+      ExecutionRoleArn: !GetAtt BackendExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: flask-backend
+          Image: !Ref ImageUri
+          Essential: true
+          PortMappings:
+            - ContainerPort: 9000
+              HostPort: 9000
+              Protocol: tcp
+              Name: backend-port
+          Environment:
+            - Name: PORT
+              Value: "9000"
+            - Name: DB_CLUSTER
+              Value: !Ref DBCluster
+            - Name: DB_NAME
+              Value: !Ref DBName
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/flask-backend-task
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: backend
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - curl -f http://localhost:9000/health || exit 1
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+          # Get database credentials from AWS Secrets Manager
+          Secrets:
+            - Name: DB_USER
+              ValueFrom: !Sub "${DBSecretArn}:DB_USER::"
+
+            - Name: DB_PASSWORD
+              ValueFrom: !Sub "${DBSecretArn}:DB_PASSWORD::"
+
+Outputs:
+  BackendTaskDefinitionArn:
+    Description: Backend Task Definition ARN
+    Value: !Ref BackendTaskDefinition
+    Export:
+      Name: backend-task-definition-arn

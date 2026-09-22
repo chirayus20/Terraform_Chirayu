@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Frontend Task Definition for Express app running on port 8000
+
+Parameters:
+  ImageUri:
+    Type: String
+    Description: ECR Image URI for Express Frontend (express-frontend)
+
+  BackendUrl:
+    Type: String
+    Description: Backend service URL (e.g. http://BACKEND-PUBLIC-IP:9000)
+
+Resources:
+  # This role allows ECS task to pull image and send logs
+  FrontendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/express-frontend-task
+      RetentionInDays: 7
+
+  FrontendExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  # This log group stores frontend container logs
+  FrontendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: express-frontend-task
+      RequiresCompatibilities:
+        - FARGATE
+      NetworkMode: awsvpc
+      Cpu: "256"
+      Memory: "512"
+      ExecutionRoleArn: !GetAtt FrontendExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: express-frontend
+          Image: !Ref ImageUri
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8000
+              Protocol: tcp
+          Environment:
+            - Name: PORT
+              Value: "8000"
+            - Name: BACKEND_URL
+              Value: "http://flask-backend:9000"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/express-frontend-task
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: frontend
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - curl -f http://localhost:8000/ || exit 1
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+Outputs:
+  FrontendTaskDefinitionArn:
+    Description: Frontend Task Definition ARN
+    Value: !Ref FrontendTaskDefinition
+    Export:
+      Name: frontend-task-definition-arn
