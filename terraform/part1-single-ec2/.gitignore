@@ -1,0 +1,9 @@
+
+# Terraform sensitive and state files
+*.tfvars
+*.tfvars.json
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.pem
