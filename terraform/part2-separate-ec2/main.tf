@@ -194,11 +194,18 @@ resource "aws_instance" "frontend_server" {
     cd /home/ubuntu
     git clone https://github.com/chirayus20/Terraform_Chirayu.git app
 
-    chown -R ubuntu:ubuntu /home/ubuntu/app
+    # Create frontend environment file with Backend Private IP
+    cat << ENVFILE > /home/ubuntu/app/frontend/.env
+    BACKEND_URL=http://${aws_instance.backend_server.private_ip}:9000
+ENVFILETerraform apply chalane se pehle git 
 
+    chown -R ubuntu:ubuntu /home/ubuntu/app
+    chmod 600 /home/ubuntu/app/frontend/.env
+
+    # Run Express frontend with BACKEND_URL injected
     cd /home/ubuntu/app/frontend
     npm install
-    sudo -u ubuntu nohup npm start > frontend.log 2>&1 &
+    sudo -u ubuntu BACKEND_URL=http://${aws_instance.backend_server.private_ip}:9000 nohup npm start > frontend.log 2>&1 &
   EOF
 
   tags = {
