@@ -6,4 +6,4 @@ __pycache__/
 myenv/
 
 .env
-backend/.env
+backend/.envterraform.tfstate*
