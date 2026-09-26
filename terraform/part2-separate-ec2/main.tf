@@ -186,25 +186,27 @@ resource "aws_instance" "frontend_server" {
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.frontend_sg.id]
 
-  user_data = <<-EOF
+ user_data = <<-EOF
     #!/bin/bash
+    # Update system packages and install required tools
     apt-get update -y
     apt-get install -y git nodejs npm
 
+    # Clone the project repository into the ubuntu user home directory
     cd /home/ubuntu
     git clone https://github.com/chirayus20/Terraform_Chirayu.git app
 
-    # Create frontend environment file with Backend Private IP
-    cat << ENVFILE > /home/ubuntu/app/frontend/.env
+    # Create the frontend environment file and inject the backend private IP on port 9000
+    cat << 'ENVFILE' > /home/ubuntu/app/frontend/.env
     BACKEND_URL=http://${aws_instance.backend_server.private_ip}:9000
-ENVFILETerraform apply chalane se pehle git 
+    ENVFILE
 
+    # Set proper permissions for the ubuntu user
     chown -R ubuntu:ubuntu /home/ubuntu/app
-    chmod 600 /home/ubuntu/app/frontend/.env
 
-    # Run Express frontend with BACKEND_URL injected
+    # Install dependencies and start the Express frontend application on port 8000
     cd /home/ubuntu/app/frontend
-    npm install
+    sudo -u ubuntu npm install
     sudo -u ubuntu BACKEND_URL=http://${aws_instance.backend_server.private_ip}:9000 nohup npm start > frontend.log 2>&1 &
   EOF
 
