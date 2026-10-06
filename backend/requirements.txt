@@ -1,3 +1,5 @@
 flask
 pymongo
 python-dotenv
+# Required by PyMongo to resolve DNS SRV records for mongodb+srv:// connection strings
+dnspython
