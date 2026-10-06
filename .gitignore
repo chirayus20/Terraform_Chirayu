@@ -10,3 +10,10 @@ backend/.envterraform.tfstate*
 .terraform/
 *.tfstate
 *.tfstate.*
+
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.env
+node_modules/
