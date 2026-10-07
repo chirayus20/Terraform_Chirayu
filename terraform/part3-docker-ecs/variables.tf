@@ -5,18 +5,6 @@ variable "aws_region" {
   description = "AWS Region for deployment"
 }
 
-# ECR Image URI for Flask Backend Container
-variable "backend_image_uri" {
-  type        = string
-  description = "ECR Image URI for Flask Backend"
-}
-
-# ECR Image URI for Express Frontend Container
-variable "frontend_image_uri" {
-  type        = string
-  description = "ECR Image URI for Express Frontend"
-}
-
 # Database User for MongoDB
 variable "db_user" {
   type      = string

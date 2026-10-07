@@ -264,7 +264,7 @@ resource "aws_ecs_task_definition" "backend_task" {
   container_definitions = jsonencode([
     {
       name      = "flask-backend"
-      image     = var.backend_image_uri
+      image     = "${aws_ecr_repository.backend.repository_url}:latest" # Use Terraform-managed backend ECR repository URL
       essential = true
       portMappings = [
         {
@@ -302,7 +302,7 @@ resource "aws_ecs_task_definition" "frontend_task" {
   container_definitions = jsonencode([
     {
       name      = "express-frontend"
-      image     = var.frontend_image_uri
+      image     = "${aws_ecr_repository.frontend.repository_url}:latest"  # Use Terraform-managed frontend ECR repository URL
       essential = true
       portMappings = [
         {
