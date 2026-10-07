@@ -1,19 +1,27 @@
+# Dependencies
 node_modules/
 package-lock.json
 
+# Python cache and environments
 __pycache__/
 *.pyc
 myenv/
 
+# Environment files and credentials
 .env
-backend/.envterraform.tfstate*
-.terraform/
-*.tfstate
-*.tfstate.*
+*.env
+backend/.env
+frontend/.env
+*.pem
+*.key
 
+# Terraform state and runtime files
 .terraform/
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
+*.tfstate.backup
+
+# Terraform variables
 *.tfvars
-.env
-node_modules/
+*.tfvars.json

@@ -81,3 +81,32 @@ terraform apply -auto-approve
 4. **MongoDB Atlas Database Console:** The saved document in the database collection (proof that data storage is working).
 
    ![MongoDB Atlas](assets/mongodb-atlas.png)
+
+---
+
+## Post-Review Improvements & Bug Fixes
+
+Based on mentor review and production best practices, I made a few key updates across the repository to harden security, manage state properly, and keep all infrastructure inside Terraform.
+
+### 1. Migrated State from Local to Remote Backend (S3 + DynamoDB)
+
+- **What was missing:** All three parts were storing state locally in `terraform.tfstate`, which isn't safe for production or team collaboration.
+- **What I did:**
+  - Added `backend.tf` across `part1`, `part2`, and `part3` pointing to an S3 bucket (`chirayu-terraform-state-bucket`) with DynamoDB state locking (`terraform-state-locks`).
+  - Ran `terraform init -migrate-state` to safely move existing states to the cloud.
+  - Cleaned up the root `.gitignore` so no state files, local locks, or secret variable files ever make it into GitHub.
+
+### 2. Built ECR Repositories Directly in Terraform (Part 3)
+
+- **What was missing:** ECR repos were previously spun up in CloudFormation and passed into ECS tasks as plain input variables.
+- **What I did:**
+  - Created `ecr.tf` in `part3-docker-ecs` to provision both `part3-frontend-app` and `part3-backend-app` via Terraform.
+  - Updated `main.tf` so the ECS task definitions read the repository URLs dynamically from the newly created resources.
+  - Cleaned up `variables.tf` and `terraform.tfvars` by dropping the old hardcoded image URI inputs.
+
+### 3. Locked Down Backend Security Group (Part 2)
+
+- **What was missing:** Port 9000 on the backend instance was exposed to the public internet (`0.0.0.0/0`).
+- **What I did:**
+  - Removed the wide-open CIDR rule on port 9000 in `part2-separate-ec2/main.tf`.
+  - Set the source to only allow traffic from `aws_security_group.frontend_sg.id`. Now the Flask API is purely internal and only accessible by the Express frontend.
