@@ -68,6 +68,7 @@ resource "aws_security_group" "backend_sg" {
   description = "Allow inbound on 9000 and 22"
   vpc_id      = aws_vpc.app_vpc.id
 
+  # Allow SSH from anywhere
   ingress {
     from_port   = 22
     to_port     = 22
@@ -75,13 +76,15 @@ resource "aws_security_group" "backend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow port 9000 only from frontend security group
   ingress {
-    from_port   = 9000
-    to_port     = 9000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 9000
+    to_port         = 9000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.frontend_sg.id]
   }
 
+  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -100,6 +103,7 @@ resource "aws_security_group" "frontend_sg" {
   description = "Allow inbound on 8000 and 22"
   vpc_id      = aws_vpc.app_vpc.id
 
+  # Allow SSH from anywhere
   ingress {
     from_port   = 22
     to_port     = 22
@@ -107,6 +111,7 @@ resource "aws_security_group" "frontend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow port 8000 from anywhere
   ingress {
     from_port   = 8000
     to_port     = 8000
@@ -114,6 +119,7 @@ resource "aws_security_group" "frontend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
